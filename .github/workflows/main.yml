@@ -1,4 +1,4 @@
-name: Rust Build  
+name: Rust Cross-Compile for Windows (GNU)  
   
 on:  
   release:  
@@ -6,7 +6,7 @@ on:
   
 jobs:  
   build:  
-    name: Build Rust Project  
+    name: Cross-Compile Rust Project for Windows (GNU)  
     runs-on: ubuntu-latest  
     steps:  
       - name: Checkout Code  
@@ -15,14 +15,17 @@ jobs:
         uses: actions-rs/toolchain@v1  
         with:  
           toolchain: stable  
+          target: x86_64-pc-windows-gnu  
           override: true  
+      - name: Install mingw-w64  
+        run: sudo apt-get install mingw-w64  
       - name: Build Project  
         uses: actions-rs/cargo@v1  
         with:  
           command: build  
-          args: --release  
+          args: --release --target x86_64-pc-windows-gnu  
       - name: Upload Artifact  
         uses: actions/upload-artifact@v2  
         with:  
-          name: rust-binary  
-          path: target/release/macgui # 替换为你的二进制文件名
+          name: rust-binary-windows-gnu  
+          path: target/x86_64-pc-windows-gnu/release/*.exe
