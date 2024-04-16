@@ -29,3 +29,13 @@ jobs:
         with:  
           name: rust-binary-windows-gnu  
           path: target/x86_64-pc-windows-gnu/release/*.exe
+      - name: Upload Release Asset  
+        id: upload-release-asset   
+        uses: actions/upload-release-asset@v1  
+        env:  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+        with:  
+          upload_url: ${{ github.event.release.upload_url }} # This pulls from the CREATE event payload, where the Release was created  
+          asset_path: ./target/x86_64-pc-windows-gnu/release/*.exe # Path to your asset  
+          asset_name: macgui.exe # Name you want to give the released asset  
+          asset_content_type: application/octet-stream # Required, but this is a common content type
