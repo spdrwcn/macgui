@@ -75,12 +75,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match (
             wiredk.iter().all(|wiredkw| line_lower.contains(wiredkw)),
-            wirelessk
-                .iter()
-                .all(|wirelessw| line_lower.contains(wirelessw)),
-            bluetoothk
-                .iter()
-                .all(|bluetoothb| line_lower.contains(bluetoothb)),
+            wirelessk.iter().all(|wirelessw| line_lower.contains(wirelessw)),
+            bluetoothk.iter().all(|bluetoothb| line_lower.contains(bluetoothb)),
         ) {
             (true, _, _) => {
                 if wired_mac.is_empty() {
@@ -118,9 +114,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("蓝牙MAC地址: {}", bluetooth_mac);
 
         // redis写入MAC地址
-        let macs_joined4: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
+        let macs_joined: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
         if let Ok(mut client) = simple_redis::create(ip_address) {
-            let set_result = client.set(&*serial_number, &*macs_joined4);
+            let set_result = client.set(&*serial_number, &*macs_joined);
             if set_result.is_ok() {
                 redis_ok = format!("MAC地址: 写入成功");
                 println!("{}", redis_ok);
@@ -131,14 +127,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let quit_result = client.quit();
             if quit_result.is_ok() {
-                println!("退出数据库.");
+             
             } else {
                 redis_error = format!("Error: {}", quit_result.err().unwrap());
                 println!("Error: {}", redis_error);
             }
         } else {
             redis_error = format!("Redis 服务端: 连接失败");
-            println!("{}", redis_error);
+       
         }
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
