@@ -3,17 +3,17 @@ name = "macgui"
 version = "1.0.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 egui = "0.27.2"
 eframe = "0.27.2"
 simple_redis = "0.6.3"
 clap = "2.33"
-qrcode = "0.14.0"
+
 [profile.release]
 strip = true 
 opt-level = 3
 lto = true
+
 [target.x86_64-pc-windows-gun]
 rustflags = ["-C", "target-feature=+crt-static"]
