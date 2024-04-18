@@ -35,12 +35,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .multiple(true)
                 .help("无线网卡匹配参数"),
         )
+        .arg(
+            Arg::with_name("bluetooth")
+                .short("b")
+                .long("bluetooth")
+                .value_name("Value")
+                .multiple(true)
+                .help("蓝牙匹配参数"),
+        )
         .get_matches();
 
     let ip_address = matches.value_of("ip").unwrap();
     let serial_number = get_bios_serial_number()?;
     let wiredk: Vec<&str> = matches.values_of("wired").unwrap().collect();
     let wirelessk: Vec<&str> = matches.values_of("wireless").unwrap().collect();
+    let bluetoothk: Vec<&str> = matches.values_of("bluetooth").unwrap().collect();
     let output = Command::new("wmic")
         .args(&[
             "path",
@@ -58,51 +67,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reader = io::BufReader::new(output);
     let mut wired_mac = String::new();
     let mut wireless_mac = String::new();
+    let mut bluetooth_mac = String::new();
     // 获取MAC地址
-    for line in reader.lines() {  
-        let line = line.unwrap();  
-        let line_lower = line.to_lowercase();  
-      
-        // 检查是否包含所有有线关键字  
-        let mut wired_all_matched = true;  
-        for wiredkw in &wiredk {  
-            if !line_lower.contains(wiredkw) {  
-                wired_all_matched = false;  
-                break;  
-            }  
-        }  
-      
-        // 检查是否包含所有无线关键字  
-        let mut wireless_all_matched = true;  
-        for wirelessw in &wirelessk {  
-            if !line_lower.contains(wirelessw) {  
-                wireless_all_matched = false;  
-                break;  
-            }  
-        }  
+    for line in reader.lines() {
+        let line = line.unwrap();
+        let line_lower = line.to_lowercase();
 
-        if wired_all_matched && wired_mac.is_empty() {  
-            wired_mac = extract_mac_address(&line);  
-            mac_found = true;  
-        } else if wireless_all_matched && wireless_mac.is_empty() {  
-            wireless_mac = extract_mac_address(&line);  
-            if !mac_found {  
-                mac_found = true;  
-            }  
-        }  
+        match (
+            wiredk.iter().all(|wiredkw| line_lower.contains(wiredkw)),
+            wirelessk
+                .iter()
+                .all(|wirelessw| line_lower.contains(wirelessw)),
+            bluetoothk
+                .iter()
+                .all(|bluetoothb| line_lower.contains(bluetoothb)),
+        ) {
+            (true, _, _) => {
+                if wired_mac.is_empty() {
+                    wired_mac = extract_mac_address(&line);
+                    mac_found = true;
+                }
+            }
+            (_, true, _) => {
+                if wireless_mac.is_empty() {
+                    wireless_mac = extract_mac_address(&line);
+                    if !mac_found {
+                        mac_found = true;
+                    }
+                }
+            }
+            (_, _, true) => {
+                if bluetooth_mac.is_empty() {
+                    bluetooth_mac = extract_mac_address(&line);
+                    if !mac_found {
+                        mac_found = true;
+                    }
+                }
+            }
+            _ => {}
+        }
     }
-    // 判断MAC地址
-    let mac_err;
-    if !wired_mac.is_empty() && !wireless_mac.is_empty() {
-        mac_err = format!("已成功采集到MAC地址");
-    } else if !wired_mac.is_empty() {
-        mac_err = format!("已成功采集到有线MAC地址");
-    } else if !wireless_mac.is_empty() {
-        mac_err = format!("已成功采集到无线MAC地址");
-    } else {
-        mac_err = format!("未采集到MAC地址");
-    }
-    println!("{}", mac_err);
 
     let mut redis_ok = String::new();
     let mut redis_error = String::new();
@@ -111,9 +115,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("SN: {}", serial_number);
         println!("有线MAC地址: {}", wired_mac);
         println!("无线MAC地址: {}", wireless_mac);
+        println!("蓝牙MAC地址: {}", bluetooth_mac);
 
         // redis写入MAC地址
-        let macs_joined4: String = format!("{} {}", wired_mac, wireless_mac);
+        let macs_joined4: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
         if let Ok(mut client) = simple_redis::create(ip_address) {
             let set_result = client.set(&*serial_number, &*macs_joined4);
             if set_result.is_ok() {
@@ -135,11 +140,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             redis_error = format!("Redis 服务端: 连接失败");
             println!("{}", redis_error);
         }
-        let redis_error1: String = format!("{}", redis_error);
-        let macs_joined3: String = format!(
-            "SN:                         {}\n \n有线MAC地址:   {}\n无线MAC地址:   {}\n",
-            serial_number, wired_mac, wireless_mac
-        );
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
             ..Default::default()
@@ -150,10 +150,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Box::new(move |cc| {
                 Box::new(MyEguiApp::new(
                     cc,
-                    &macs_joined3,
-                    &redis_error1,
+                    &redis_error,
                     &redis_ok,
-                    &mac_err,
+                    &bluetooth_mac,
+                    &serial_number,
+                    &wired_mac,
+                    &wireless_mac,
                 ))
             }),
         );
@@ -168,35 +170,43 @@ fn extract_mac_address(line: &str) -> String {
 
 #[derive(Default)]
 struct MyEguiApp {
-    greeting: String,
-    redis_error1: String,
+    redis_error: String,
     redis_ok: String,
-    mac_err: String,
+    bluetooth_mac: String,
+    serial_number: String,
+    wired_mac: String,
+    wireless_mac: String,
 }
 impl MyEguiApp {
     fn new(
         cc: &CreationContext<'_>,
-        greeting: &str,
-        redis_error1: &str,
+        redis_error: &str,
         redis_ok: &str,
-        mac_err: &str,
+        bluetooth_mac: &str,
+        serial_number: &str,
+        wired_mac: &str,
+        wireless_mac: &str,
     ) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
         Self {
-            greeting: greeting.to_string(),
-            redis_error1: redis_error1.to_string(),
+            redis_error: redis_error.to_string(),
             redis_ok: redis_ok.to_string(),
-            mac_err: mac_err.to_string(),
+            bluetooth_mac: bluetooth_mac.to_string(),
+            serial_number: serial_number.to_string(),
+            wired_mac: wired_mac.to_string(),
+            wireless_mac: wireless_mac.to_string(),
         }
     }
 }
 impl App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading(&self.greeting);
-            ui.heading(&self.mac_err);
-            ui.heading(&self.redis_ok);
-            ui.heading(&self.redis_error1);
+            ui.heading(format!("序列号：{}", self.serial_number));
+            ui.heading(format!("有线MAC地址：{}", self.wired_mac));
+            ui.heading(format!("无线MAC地址：{}", self.wireless_mac));
+            ui.heading(format!("蓝牙MAC地址：{}", self.bluetooth_mac));
+            ui.heading(format!("Redis写入结果：{}", self.redis_ok));
+            ui.heading(&self.redis_error);
         });
     }
 }
