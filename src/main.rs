@@ -9,7 +9,7 @@ use std::result::Result;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = ClapApp::new("macgui")
-        .version("1.0.0")
+        .version("1.1.0")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
