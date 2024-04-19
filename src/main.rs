@@ -107,22 +107,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut redis_ok = String::new();
     let mut redis_error = String::new();
     if mac_found {
-        println!("Redis address: {}", ip_address);
-        println!("SN: {}", serial_number);
-        println!("有线MAC地址: {}", wired_mac);
-        println!("无线MAC地址: {}", wireless_mac);
-        println!("蓝牙MAC地址: {}", bluetooth_mac);
-
         // redis写入MAC地址
         let macs_joined: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
         if let Ok(mut client) = simple_redis::create(ip_address) {
             let set_result = client.set(&*serial_number, &*macs_joined);
             if set_result.is_ok() {
                 redis_ok = format!("MAC地址: 写入成功");
-                println!("{}", redis_ok);
+               
             } else {
                 redis_error = format!("MAC地址: 写入失败");
-                println!("{}", redis_error);
+         
             }
 
             let quit_result = client.quit();
@@ -130,7 +124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
              
             } else {
                 redis_error = format!("Error: {}", quit_result.err().unwrap());
-                println!("Error: {}", redis_error);
+              
             }
         } else {
             redis_error = format!("Redis 服务端: 连接失败");
