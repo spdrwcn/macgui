@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut wireless_mac = String::new();
     let mut bluetooth_mac = String::new();
     // 获取MAC地址
-    flet mut mac_found = false;
+    let mut mac_found = false;
     for line in reader.lines() {
         let line = line.unwrap();
         let line_lower = line.to_lowercase();
