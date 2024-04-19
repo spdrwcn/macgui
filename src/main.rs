@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use clap::{App as ClapApp, Arg, Values};
 use eframe::egui;
 use simple_redis;
