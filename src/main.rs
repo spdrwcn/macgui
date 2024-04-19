@@ -63,7 +63,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .stdout
         .unwrap();
 
-    let mut mac_found = false;
     let reader = io::BufReader::new(output);
     let mut wired_mac = String::new();
     let mut wireless_mac = String::new();
