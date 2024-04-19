@@ -44,6 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .help("蓝牙匹配参数"),
         )
         .get_matches();
+
     let ip_address = matches.value_of("ip").unwrap();
     let serial_number = get_bios_serial_number()?;
     let wiredk: Vec<&str> = matches.values_of("wired").unwrap().collect();
@@ -61,12 +62,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to execute wmic command")
         .stdout
         .unwrap();
+
+    let mut mac_found = false;
     let reader = io::BufReader::new(output);
     let mut wired_mac = String::new();
     let mut wireless_mac = String::new();
     let mut bluetooth_mac = String::new();
     // 获取MAC地址
-    let mut mac_found = false;
+    flet mut mac_found = false;
     for line in reader.lines() {
         let line = line.unwrap();
         let line_lower = line.to_lowercase();
@@ -91,30 +94,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut redis_ok = String::new();
     let mut redis_error = String::new();
     if mac_found {
-        let macs_joined = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
-        match simple_redis::create(ip_address) {
-            Ok(mut client) => {
-                match client.set(&serial_number, &macs_joined) {
-                    Ok(_) => {
-                        redis_ok = "MAC地址: 写入成功".to_string();
-                    }
-                    Err(e) => {
-                        redis_error = format!("MAC地址: 写入失败，原因: {}", e);
-                    }
-                }
-                match client.quit() {
-                    Ok(_) => {
-                    }
-                    Err(e) => {
-                        if redis_error.is_empty() {
-                            redis_error = format!("Error: {}", e);
-                        }
-                    }
-                }
+        // redis写入MAC地址
+        let macs_joined: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
+        if let Ok(mut client) = simple_redis::create(ip_address) {
+            let set_result = client.set(&*serial_number, &*macs_joined);
+            if set_result.is_ok() {
+                redis_ok = format!("MAC地址: 写入成功"); 
+            } else {
+                redis_error = format!("MAC地址: 写入失败");
             }
-            Err(e) => {
-                redis_error = format!("Redis 服务端: 连接失败，原因: {}", e);
+            let quit_result = client.quit();
+            if quit_result.is_ok() {
+            } else {
+                redis_error = format!("Error: {}", quit_result.err().unwrap());
             }
+        } else {
+            redis_error = format!("Redis 服务端: 连接失败");
         }
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
@@ -138,12 +133,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
-
-// MAC格式处理
 fn extract_mac_address(line: &str) -> String {
     line.chars().take(17).collect::<String>()
 }
-
 #[derive(Default)]
 struct MyEguiApp {
     redis_error: String,
@@ -177,30 +169,36 @@ impl MyEguiApp {
 impl App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading(format!("序列号:     {}", self.serial_number));
-            ui.heading(format!("有线MAC地址:{}", self.wired_mac));
-            ui.heading(format!("无线MAC地址:{}", self.wireless_mac));
-            ui.heading(format!("蓝牙MAC地址:{}", self.bluetooth_mac));
-            ui.heading(format!("{}", self.redis_ok));
+            ui.heading(format!("序列号：{}", self.serial_number));
+            ui.heading(format!("有线MAC地址：{}", self.wired_mac));
+            ui.heading(format!("无线MAC地址：{}", self.wireless_mac));
+            ui.heading(format!("蓝牙MAC地址：{}", self.bluetooth_mac));
+            ui.heading(format!("Redis写入结果：{}", self.redis_ok));
             ui.heading(&self.redis_error);
         });
     }
 }
 // 获取序列号
-fn get_bios_serial_number() -> Result<String, Box<dyn Error>> {
+fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
     let output = Command::new("wmic")
-        .args(&["bios", "get", "serialnumber"])
-        .output()
-        .map_err(|e| format!("Failed to execute WMIC command: {}", e))?;
+        .arg("bios")
+        .arg("get")
+        .arg("serialnumber")
+        .output()?;
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
-    if lines.len() < 2 {
-        return Err(format!("Insufficient lines in WMIC output: {}", stdout).into());
+    let serial_line = lines.get(1);
+    if let Some(serial_line) = serial_line {
+        let serial_number_part = serial_line.split_whitespace().last();
+        if let Some(serial_number) = serial_number_part {
+            return Ok(serial_number.to_string());
+        }
     }
-    let serial_number_part = lines[1].split_whitespace().last();
-    serial_number_part
-        .map(|s| s.to_string())
-        .ok_or_else(|| format!("Failed to find BIOS serial number in WMIC output.").into())?
+    Err(format!(
+        "Failed to find BIOS serial number in WMIC output: {}",
+        stdout
+    )
+    .into())
 }
 // 自定义字体
 fn setup_custom_fonts(ctx: &egui::Context) {
