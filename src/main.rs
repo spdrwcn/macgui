@@ -186,7 +186,7 @@ fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
         .arg("serialnumber")
         .output()?;
 
-    let stdout = String::from_utf8(output.stdout.as_slice())?; // 尝试将输出转换为UTF-8字符串
+    let stdout = String::from_utf8(output.stdout)?; // 尝试将输出转换为UTF-8字符串
     let lines: Vec<&str> = stdout.split('\n').collect::<Vec<_>>(); // 直接使用换行符分割行并收集为Vec
 
     // 直接在match语句中处理第二行，如果找到则返回序列号，否则返回错误
