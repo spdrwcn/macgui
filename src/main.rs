@@ -179,26 +179,29 @@ impl App for MyEguiApp {
 }
 // 获取序列号
 fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
+    
     let output = Command::new("wmic")
         .arg("bios")
         .arg("get")
         .arg("serialnumber")
         .output()?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let lines: Vec<&str> = stdout.lines().collect();
-    let serial_line = lines.get(1);
-    if let Some(serial_line) = serial_line {
-        let serial_number_part = serial_line.split_whitespace().last();
-        if let Some(serial_number) = serial_number_part {
-            return Ok(serial_number.to_string());
+
+    let stdout = String::from_utf8(output.stdout.as_slice())?; // 尝试将输出转换为UTF-8字符串
+    let lines: Vec<&str> = stdout.split('\n').collect::<Vec<_>>(); // 直接使用换行符分割行并收集为Vec
+
+    // 直接在match语句中处理第二行，如果找到则返回序列号，否则返回错误
+    match lines.get(1) {
+        Some(line) => {
+            let serial = line.trim().split_whitespace().last().map(|s| s.to_string());
+            match serial {
+                Some(s) => Ok(s),
+                None => Err("Failed to parse BIOS serial number from WMIC output.".into()),
+            }
         }
+        None => Err("WMIC output did not contain the expected lines.".into()),
     }
-    Err(format!(
-        "Failed to find BIOS serial number in WMIC output: {}",
-        stdout
-    )
-    .into())
 }
+
 // 自定义字体
 fn setup_custom_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
