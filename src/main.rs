@@ -1,6 +1,5 @@
-use clap::{App as ClapApp, Arg};
+use clap::{App as ClapApp, Arg, Values};
 use eframe::egui;
-use eframe::{run_native, App, CreationContext, Frame};
 use simple_redis;
 use std::io::{self, BufRead};
 use std::process::Command;
@@ -16,8 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short("i")
                 .long("ip")
                 .value_name("IP_ADDRESS")
-                .help("Redis数据库地址 例: redis://127.0.0.1:6379/0")
-                .required(true),
+                .help("Redis数据库地址")
+                .default_value("redis://127.0.0.1:6379/0"),
         )
         .arg(
             Arg::with_name("wired")
@@ -25,7 +24,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("wired")
                 .value_name("Value")
                 .multiple(true)
-                .help("有线网卡匹配参数"),
+                .help("有线网卡匹配参数")
+                .default_value("gbe"),
         )
         .arg(
             Arg::with_name("wireless")
@@ -33,7 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("wireless")
                 .value_name("Value")
                 .multiple(true)
-                .help("无线网卡匹配参数"),
+                .help("无线网卡匹配参数")
+                .default_value("wi-fi"),
         )
         .arg(
             Arg::with_name("bluetooth")
@@ -41,15 +42,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("bluetooth")
                 .value_name("Value")
                 .multiple(true)
-                .help("蓝牙匹配参数"),
+                .help("蓝牙匹配参数")
+                .default_value("bluetooth"),
         )
         .get_matches();
-
     let ip_address = matches.value_of("ip").unwrap();
     let serial_number = get_bios_serial_number()?;
-    let wiredk: Vec<&str> = matches.values_of("wired").unwrap().collect();
-    let wirelessk: Vec<&str> = matches.values_of("wireless").unwrap().collect();
-    let bluetoothk: Vec<&str> = matches.values_of("bluetooth").unwrap().collect();
+    let wiredk: Vec<&str> = matches.values_of("wired").map_or_else(Vec::new, |values: Values| values.collect());
+    let wirelessk: Vec<&str> = matches.values_of("wireless").map_or_else(Vec::new, |values: Values| values.collect());
+    let bluetoothk: Vec<&str> = matches.values_of("bluetooth").map_or_else(Vec::new, |values: Values| values.collect());
     let output = Command::new("wmic")
         .args(&[
             "path",
@@ -62,7 +63,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to execute wmic command")
         .stdout
         .unwrap();
-
     let reader = io::BufReader::new(output);
     let mut wired_mac = String::new();
     let mut wireless_mac = String::new();
@@ -92,13 +92,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut redis_ok = String::new();
     let mut redis_error = String::new();
+    // redis写入MAC地址
     if mac_found {
-        // redis写入MAC地址
         let macs_joined: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
         if let Ok(mut client) = simple_redis::create(ip_address) {
             let set_result = client.set(&*serial_number, &*macs_joined);
             if set_result.is_ok() {
-                redis_ok = format!("MAC地址: 写入成功"); 
+                redis_ok = format!("MAC地址: 写入成功");
             } else {
                 redis_error = format!("MAC地址: 写入失败");
             }
@@ -114,82 +114,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
             ..Default::default()
         };
-        let _ = run_native(
-            "MAC地址采集程序",
-            options,
-            Box::new(move |cc| {
-                Box::new(MyEguiApp::new(
-                    cc,
-                    &redis_error,
-                    &redis_ok,
-                    &bluetooth_mac,
-                    &serial_number,
-                    &wired_mac,
-                    &wireless_mac,
-                ))
-            }),
-        );
+        let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {
+            setup_custom_fonts(ctx);
+            egui::CentralPanel::default().show(ctx, |ui| {
+                ui.heading(format!("序列号: {}", serial_number));
+                ui.heading(format!("有线MAC地址: {}", wired_mac));
+                ui.heading(format!("无线MAC地址: {}", wireless_mac));
+                ui.heading(format!("蓝牙MAC地址: {}", bluetooth_mac));
+                ui.heading(&redis_ok);
+                ui.heading(&redis_error);
+            });
+        });
     }
     Ok(())
 }
+
 fn extract_mac_address(line: &str) -> String {
     line.chars().take(17).collect::<String>()
 }
-#[derive(Default)]
-struct MyEguiApp {
-    redis_error: String,
-    redis_ok: String,
-    bluetooth_mac: String,
-    serial_number: String,
-    wired_mac: String,
-    wireless_mac: String,
-}
-impl MyEguiApp {
-    fn new(
-        cc: &CreationContext<'_>,
-        redis_error: &str,
-        redis_ok: &str,
-        bluetooth_mac: &str,
-        serial_number: &str,
-        wired_mac: &str,
-        wireless_mac: &str,
-    ) -> Self {
-        setup_custom_fonts(&cc.egui_ctx);
-        Self {
-            redis_error: redis_error.to_string(),
-            redis_ok: redis_ok.to_string(),
-            bluetooth_mac: bluetooth_mac.to_string(),
-            serial_number: serial_number.to_string(),
-            wired_mac: wired_mac.to_string(),
-            wireless_mac: wireless_mac.to_string(),
-        }
-    }
-}
-impl App for MyEguiApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading(format!("序列号：{}", self.serial_number));
-            ui.heading(format!("有线MAC地址：{}", self.wired_mac));
-            ui.heading(format!("无线MAC地址：{}", self.wireless_mac));
-            ui.heading(format!("蓝牙MAC地址：{}", self.bluetooth_mac));
-            ui.heading(format!("Redis写入结果：{}", self.redis_ok));
-            ui.heading(&self.redis_error);
-        });
-    }
-}
 // 获取序列号
 fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
-    
     let output = Command::new("wmic")
         .arg("bios")
         .arg("get")
         .arg("serialnumber")
         .output()?;
-
-    let stdout = String::from_utf8(output.stdout)?; // 尝试将输出转换为UTF-8字符串
-    let lines: Vec<&str> = stdout.split('\n').collect::<Vec<_>>(); // 直接使用换行符分割行并收集为Vec
-
-    // 直接在match语句中处理第二行，如果找到则返回序列号，否则返回错误
+    let stdout = String::from_utf8(output.stdout)?;
+    let lines: Vec<&str> = stdout.split('\n').collect::<Vec<_>>();
     match lines.get(1) {
         Some(line) => {
             let serial = line.trim().split_whitespace().last().map(|s| s.to_string());
@@ -201,13 +152,9 @@ fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
         None => Err("WMIC output did not contain the expected lines.".into()),
     }
 }
-
 // 自定义字体
 fn setup_custom_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
-
-    //安装的字体支持.ttf和.otf文件
-    //main.rs的同级目录）
     fonts.font_data.insert(
         "my_font".to_owned(),
         egui::FontData::from_static(include_bytes!("cn.ttf")),
