@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use clap::{App as ClapApp, Arg, Values};
 use eframe::egui;
@@ -6,6 +6,9 @@ use simple_redis;
 use std::io::{self, BufRead};
 use std::process::Command;
 use std::result::Result;
+use image::{DynamicImage, Luma};
+use qrcode::QrCode;
+use egui::ImageData;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = ClapApp::new("macgui")
@@ -97,6 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // redis写入MAC地址
     if mac_found {
         let macs_joined: String = format!("{} {} {}", wired_mac, wireless_mac, bluetooth_mac);
+        let mac_qr: String = format!("{} {} {} {}", serial_number, wired_mac, wireless_mac, bluetooth_mac);
         if let Ok(mut client) = simple_redis::create(ip_address) {
             let set_result = client.set(&*serial_number, &*macs_joined);
             if set_result.is_ok() {
@@ -113,18 +117,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             redis_error = format!("Redis 服务端: 连接失败");
         }
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
+            viewport: egui::ViewportBuilder::default().with_inner_size([315.0, 500.0]),
             ..Default::default()
         };
         let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {
             setup_custom_fonts(ctx);
             egui::CentralPanel::default().show(ctx, |ui| {
+                ui.label("SN-MAC地址二维码");
+                let img = ui.ctx().load_texture("qr_code", generate_qrcode_imagedata(
+                    &mac_qr),
+                    Default::default());
+                ui.add(egui::Image::new(&img));
                 ui.heading(format!("序列号: {}", serial_number));
                 ui.heading(format!("有线MAC地址: {}", wired_mac));
                 ui.heading(format!("无线MAC地址: {}", wireless_mac));
                 ui.heading(format!("蓝牙MAC地址: {}", bluetooth_mac));
                 ui.heading(&redis_ok);
                 ui.heading(&redis_error);
+                
+                
             });
         });
     }
@@ -133,6 +144,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn extract_mac_address(line: &str) -> String {
     line.chars().take(17).collect::<String>()
+}
+fn generate_qrcode_imagedata(content:&str) -> ImageData {
+
+    let qr_code = QrCode::new(content).unwrap();
+    let qr_code = qr_code.render::<Luma<u8>>().build();
+    let qr_code = DynamicImage::ImageLuma8(qr_code);
+
+    let size = [
+        qr_code.width() as usize,
+         qr_code.height() as usize
+    ];
+
+    let qr_code = qr_code.to_rgba8();
+    let qr_code = qr_code.as_flat_samples();
+
+    ImageData::from(
+        egui::ColorImage::from_rgba_unmultiplied(
+        size,
+        qr_code.as_slice()
+    ))
 }
 // 获取序列号
 fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
