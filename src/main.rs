@@ -1,6 +1,6 @@
 // #![windows_subsystem = "windows"]
 
-use clap::{App as ClapApp, Arg, Values};
+use clap::{App as ClapApp, Arg};
 use eframe::egui;
 use simple_redis;
 use std::io::{self, BufRead};
@@ -29,8 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("wired")
                 .value_name("Value")
                 .multiple(true)
-                .help("有线网卡匹配参数")
-                .default_value("gbe"),
+                .help("有线网卡匹配参数 [default: gbe true]"),
         )
         .arg(
             Arg::with_name("wireless")
@@ -38,8 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("wireless")
                 .value_name("Value")
                 .multiple(true)
-                .help("无线网卡匹配参数")
-                .default_value("wi-fi"),
+                .help("无线网卡匹配参数 [default: wi-fi true]"),
         )
         .arg(
             Arg::with_name("bluetooth")
@@ -47,15 +45,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .long("bluetooth")
                 .value_name("Value")
                 .multiple(true)
-                .help("蓝牙匹配参数")
-                .default_value("bluetooth"),
+                .help("蓝牙匹配参数 [default: bluetooth true]"),
         )
         .get_matches();
     let ip_address = matches.value_of("ip").unwrap();
     let serial_number = get_bios_serial_number()?;
-    let wiredk: Vec<&str> = matches.values_of("wired").map_or_else(Vec::new, |values: Values| values.collect());
-    let wirelessk: Vec<&str> = matches.values_of("wireless").map_or_else(Vec::new, |values: Values| values.collect());
-    let bluetoothk: Vec<&str> = matches.values_of("bluetooth").map_or_else(Vec::new, |values: Values| values.collect());
+    let wiredk: Vec<&str> = if let Some(values) = matches.values_of("wired") {  
+        values.collect()  
+    } else {  
+        vec!["gbe", "true"]  
+    };  
+    let wirelessk: Vec<&str> = if let Some(values) = matches.values_of("wireless") {  
+        values.collect()  
+    } else {  
+        vec!["wi-fi", "true"]  
+    }; 
+    let bluetoothk: Vec<&str> = if let Some(values) = matches.values_of("bluetooth") {  
+        values.collect()  
+    } else {  
+        vec!["bluetooth", "true"]  
+    };  
     let output = Command::new("wmic")
         .args(&[
             "path",
