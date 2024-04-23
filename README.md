@@ -1,6 +1,6 @@
 ## macgui
 
- - 批量采集SN MAC地址客户端，数据展示为二维码并写入Redis。
+ - 批量采集SN MAC地址客户端，数据展示为二维码并以`json`格式写入Redis。
  - 可配合 <https://github.com/spdrwcn/macjson> 导入Execl表格
 
  ![macgui](macgui.png)
