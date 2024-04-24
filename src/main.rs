@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use clap::{App as ClapApp, Arg};
 use eframe::egui;
