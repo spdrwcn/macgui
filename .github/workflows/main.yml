@@ -26,8 +26,9 @@ jobs:
           args: --release --target x86_64-pc-windows-gnu  
       - name: Compress Executable  
         run: |  
+          TAG=${GITHUB_REF#refs/tags/}
           cd target/x86_64-pc-windows-gnu/release/  
-          zip -r ../../../macgui-x86_64-windows-gnu.zip *.exe  
+          zip -r ../../../macgui${GITHUB_REF#refs/tags/}-x86_64-windows-gnu.zip *.exe  
       - name: Upload Artifact  
         uses: actions/upload-artifact@v2  
         with:  
@@ -40,4 +41,4 @@ jobs:
         env:  
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         with:  
-          files: macgui-x86_64-windows-gnu.zip
+          files: macgui${GITHUB_REF#refs/tags/}-x86_64-windows-gnu.zip
