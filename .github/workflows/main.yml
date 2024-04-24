@@ -26,14 +26,13 @@ jobs:
           args: --release --target x86_64-pc-windows-gnu  
       - name: Compress Executable  
         run: |  
-          TAG=${GITHUB_REF#refs/tags/}
           cd target/x86_64-pc-windows-gnu/release/  
-          zip -r ../../../macgui${GITHUB_REF#refs/tags/}-x86_64-windows-gnu.zip *.exe  
+          zip -r ../../../macgui-x86_64-windows-gnu.zip *.exe  
       - name: Upload Artifact  
         uses: actions/upload-artifact@v2  
         with:  
           name: rust-binary-windows-gnu  
-          path: rust-binary-windows-gnu.zip  
+          path: macgui-x86_64-windows-gnu.zip
       - name: Upload Release Asset  
         id: upload-release-asset  
         uses: softprops/action-gh-release@v1  
@@ -41,4 +40,4 @@ jobs:
         env:  
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         with:  
-          files: macgui${GITHUB_REF#refs/tags/}-x86_64-windows-gnu.zip
+          files: macgui-x86_64-windows-gnu.zip
