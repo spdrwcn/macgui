@@ -27,7 +27,7 @@ jobs:
       - name: Compress Executable  
         run: |  
           cd target/x86_64-pc-windows-gnu/release/  
-          zip -r ../../../x86_64-windows-gnu.zip *.exe  
+          zip -r ../../../macgui-x86_64-windows-gnu.zip *.exe  
       - name: Upload Artifact  
         uses: actions/upload-artifact@v2  
         with:  
@@ -40,4 +40,4 @@ jobs:
         env:  
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         with:  
-          files: x86_64-windows-gnu.zip
+          files: macgui-x86_64-windows-gnu.zip
