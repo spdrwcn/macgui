@@ -27,7 +27,7 @@ OPTIONS:
     -l, --wireless <Value>...     无线网卡匹配参数 [default: wi-fi true]
 ```
 
-## 默认参数 多逗号分隔
+## 默认参数 多组参数逗号分隔
 ```
 vec!["gbe", "true"]
 ```
