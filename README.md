@@ -27,8 +27,22 @@ OPTIONS:
     -l, --wireless <Value>...     无线网卡匹配参数 [default: wi-fi true]
 ```
 
+## 默认参数 多逗号分隔
+```
+vec!["gbe", "true"]
+```
 
 ## 示例 
 ```
 macgui -i redis://127.0.0.1:6379/0 -w gbe true realtek -l ax211 true wi-fi -b blue true 
+```
+
+## 编译 
+
+- 推荐使用`cross`
+
+```
+git clone https://github.com/spdrwcn/macgui.git
+cd macgui 
+cross build --release --target=x86_64-pc-windows-gnu
 ```
