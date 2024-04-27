@@ -27,3 +27,8 @@ OPTIONS:
     -l, --wireless <Value>...     无线网卡匹配参数 [default: wi-fi true]
 ```
 
+
+## 示例 
+```
+macgui -i redis://127.0.0.1:6379/0 -w gbe true realtek -l ax211 true wi-fi -b blue true 
+```
