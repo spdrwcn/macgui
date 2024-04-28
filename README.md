@@ -9,7 +9,7 @@
 
 ```
 ./macgui -h
-macgui 1.2.1
+macgui 1.4.0
 h13317136163@163.com
 MAC地址采集程序
 
@@ -21,20 +21,36 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -b, --bluetooth <Value>...    蓝牙匹配参数 [default: bluetooth true]
     -i, --ip <IP_ADDRESS>         Redis数据库地址 [default: redis://127.0.0.1:6379/0]
-    -w, --wired <Value>...        有线网卡匹配参数 [default: gbe true]
-    -l, --wireless <Value>...     无线网卡匹配参数 [default: wi-fi true]
 ```
 
 ## 默认参数 多组参数逗号分隔
 ```
-vec!["gbe", "true"]
+        (
+            "wired",
+            vec![
+                vec!["gbe", "true"]
+            ],
+        ),
+        (
+            "wireless",   // 多组条件示例，任意一组匹配即可
+            vec![
+                vec!["wi-fi", "true"],
+                vec!["wi-fi", "ax"],
+                vec!["wireless", "true"]
+            ],
+        ),
+        (
+            "bluetooth",
+            vec![
+                vec!["bluetooth", "true"]
+            ],
+        ),
 ```
 
 ## 示例 
 ```
-macgui -i redis://127.0.0.1:6379/0 -w gbe true realtek -l ax211 true wi-fi -b blue true 
+macgui -i redis://127.0.0.1:6379/0 
 ```
 
 ## 编译 
