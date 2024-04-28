@@ -181,7 +181,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         redis_error = format!("Redis 服务端: 连接失败");
     }
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([300.0, 500.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([400.0, 600.0]),
         ..Default::default()
     };
     let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {
