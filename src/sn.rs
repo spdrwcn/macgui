@@ -1,4 +1,5 @@
 use std::process::Command;
+
 pub fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
     let output = Command::new("wmic")
         .arg("bios")
