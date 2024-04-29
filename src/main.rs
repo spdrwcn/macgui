@@ -13,7 +13,7 @@ mod sn;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("macgui")
-        .version("1.4.0")
+        .version("1.3.0")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         String::from("Unknown")
     });
     let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
-    let (redis_ok, redis_error) = redis::write_mac_to_redis(
+    let redis_status = redis::write_mac_to_redis(
         &ip_address,
         &serial_number,
         &wired_mac,
@@ -44,12 +44,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serial_number, wired_mac, wireless_mac, bluetooth_mac
     );
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([400.0, 600.0]),
+        viewport: egui::ViewportBuilder::default(),
         ..Default::default()
     };
     let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {
         setup_custom_fonts(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.vertical_centered(|ui| {
             ui.label("SN-MAC地址二维码");
             let img = ui.ctx().load_texture(
                 "qr_code",
@@ -61,8 +62,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ui.heading(format!("有线MAC地址: {}", wired_mac));
             ui.heading(format!("无线MAC地址: {}", wireless_mac));
             ui.heading(format!("蓝牙MAC地址: {}", bluetooth_mac));
-            ui.heading(&redis_ok);
-            ui.heading(&redis_error);
+            ui.heading(&redis_status);
+            });
         });
     });
     Ok(())
