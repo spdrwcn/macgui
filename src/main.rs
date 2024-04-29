@@ -13,7 +13,7 @@ mod sn;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("macgui")
-        .version("1.3.0")
+        .version("1.4.1")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
