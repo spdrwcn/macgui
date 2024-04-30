@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serial_number, wired_mac, wireless_mac, bluetooth_mac
     );
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default(),
+        viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 550.0]),
         ..Default::default()
     };
     let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {

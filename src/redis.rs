@@ -18,15 +18,16 @@ pub fn write_mac_to_redis(
     let json_str = json_data.to_string();
   
     // 尝试连接到Redis并设置数据  
-    let redis_status = match simple_redis::create(ip_address) {  
-        Ok(mut client) => {  
-            match client.set(serial_number, &*json_str) {  
-                Ok(_) => "MAC地址写入成功".to_string(),  
-                Err(error) => format!("MAC地址写入失败"),  
-            }  
-        },  
-        Err(error) => format!("服务端连接失败"),  
-    }; 
+    let redis_status = match simple_redis::create(ip_address) {
+        Ok(mut client) => {
+
+            match client.set(serial_number, &*json_str) {
+                Err(error) => format!("MAC地址写入失败 \nRedis: {}", error),
+                _ => format!("MAC地址写入成功"),
+            }
+        },
+        Err(_) => todo!(),
+    };
   
     redis_status
 }
