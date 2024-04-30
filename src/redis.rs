@@ -22,10 +22,10 @@ pub fn write_mac_to_redis(
         Ok(mut client) => {  
             match client.set(serial_number, &*json_str) {  
                 Ok(_) => "MAC地址写入成功".to_string(),  
-                Err(error) => format!("MAC地址写入失败\nRedis: {}", error),  
+                Err(error) => format!("MAC地址写入失败"),  
             }  
         },  
-        Err(error) => format!("服务端连接失败\nRedis: {}", error),  
+        Err(error) => format!("服务端连接失败"),  
     }; 
   
     redis_status
