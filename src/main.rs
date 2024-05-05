@@ -5,15 +5,14 @@ use eframe::egui;
 use egui::ImageData;
 use image::{DynamicImage, Luma};
 use qrcode::QrCode;
-use std::result::Result;
 
 mod mac;
 mod redis;
 mod sn;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let matches = App::new("macgui")
-        .version("1.4.1")
+        .version("1.4.2")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
@@ -66,7 +65,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
         });
     });
-    Ok(())
 }
 
 fn generate_qrcode_imagedata(content: &str) -> ImageData {
