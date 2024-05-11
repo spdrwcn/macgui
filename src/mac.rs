@@ -18,26 +18,16 @@ pub fn get_mac_addresses() -> (String, String, String) {
         .unwrap();
 
     let conditions = [
-        (
-            "wired",
-            vec![
-                vec!["gbe", "true"]
-            ],
-        ),
+        ("wired", vec![vec!["gbe", "true"]]),
         (
             "wireless",
             vec![
                 vec!["wi-fi", "true"],
                 vec!["wi-fi", "ax"],
-                vec!["wireless", "true"]
+                vec!["wireless", "true"],
             ],
         ),
-        (
-            "bluetooth",
-            vec![
-                vec!["bluetooth", "true"]
-            ],
-        ),
+        ("bluetooth", vec![vec!["bluetooth", "true"]]),
     ];
 
     let reader = BufReader::new(output);
