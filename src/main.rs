@@ -5,18 +5,15 @@ use eframe::egui;
 use egui::ImageData;
 use image::{DynamicImage, Luma};
 use qrcode::QrCode;
+use std::fmt::Display;
 
-mod cpu_info;
-mod disk;
 mod mac;
-mod ram_info;
 mod redis;
-mod sn;
-mod gpu;
+mod sysinfo;
 
 fn main() {
     let matches = App::new("macgui")
-        .version("1.4.3")
+        .version("1.4.4")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
@@ -29,30 +26,13 @@ fn main() {
         )
         .get_matches();
     let ip_address = matches.value_of("ip").unwrap();
-
-    let serial_number = sn::get_bios_serial_number().unwrap_or_else(|err| {
-        eprintln!("Error fetching serial number: {}", err);
-        String::from("Unknown")
-    });
-
-    let cpu_name = cpu_info::cpu_name().unwrap_or_else(|err| {
-        eprintln!("Error fetching cpu name: {}", err);
-        String::from("Unknown")
-    });
-
-    let ramgb = match ram_info::ram_info() {
-        Ok(total_gb) => format!("{:.2} GB", total_gb),
-        Err(e) => format!("Error getting RAM info: {}", e),
-    };
-    let disk_info = disk::get_disk_info().unwrap_or_else(|e| {
-        eprintln!("Error getting disk info: {}", e);
-        String::from("Unknown")
-    });
-    let gpu_name = gpu::get_gpu_info().unwrap_or_else(|e| {
-        eprintln!("Error getting gpu info: {}", e);
-        String::from("Unknown")
-    });
+    let serial_number = handle_error(sysinfo::get_bios_serial_number(), String::from("Unknown"), "fetching serial number");  
+    let cpu_name = handle_error(sysinfo::cpu_name(), String::from("Unknown"), "fetching cpu name");  
+    let ramgb = match sysinfo::ram_info() {Ok(total_gb) => format!("{}", total_gb),Err(e) => format!("Error getting RAM info: {}", e),};
+    let disk_info = handle_error(sysinfo::get_disk_info(), String::from("Unknown"), "getting disk info");  
+    let gpu_name = handle_error(sysinfo::get_gpu_info(), String::from("Unknown"), "getting gpu info");  
     let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
+
     let redis_status = redis::write_mac_to_redis(
         &ip_address,
         &serial_number,
@@ -77,9 +57,9 @@ fn main() {
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         ui.heading(format!("处理器: {}", cpu_name));
                         ui.heading(format!("内存: {} GB\n", ramgb));
-                        ui.label("硬盘:");
+                        ui.heading("硬盘:");
                         ui.heading(format!("{}", disk_info));
-                        ui.label("显卡:");
+                        ui.heading("显卡:");
                         ui.heading(format!("{}", gpu_name));
                         ui.heading(format!("序列号: {}", serial_number));
                         ui.heading(format!("有线MAC地址: {}", wired_mac));
@@ -138,3 +118,13 @@ fn setup_custom_fonts(ctx: &egui::Context) {
         .push("my_font".to_owned());
     ctx.set_fonts(fonts);
 }
+
+fn handle_error<T, E: Display>(result: Result<T, E>, default: T, error_msg: &str) -> T {  
+    match result {  
+        Ok(value) => value,  
+        Err(err) => {  
+            eprintln!("Error {}: {}", error_msg, err);  
+            default  
+        }  
+    }  
+}  
