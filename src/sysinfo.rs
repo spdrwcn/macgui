@@ -1,50 +1,49 @@
-use std::process::Command;  
 use regex::Regex;
 use std::error::Error;
+use std::process::Command;
 
-fn run_wmic_command_cpu_sn(command: &str) -> Result<String, Box<dyn std::error::Error>> {  
-    let output = Command::new("cmd")  
-        .arg("/c")  
-        .arg(command)  
-        .output()?;  
-  
-    let stdout = String::from_utf8(output.stdout)?;  
-    let lines: Vec<&str> = stdout.lines().collect();  
-  
-    // 假设我们只对第二行感兴趣，并提取其最后一个单词  
-    match lines.get(1) {  
-        Some(line) => {  
-            let last_word = line.trim().split_whitespace().last().map(|s| s.to_string());  
-            match last_word {  
-                Some(word) => Ok(word),  
-                None => Err("Failed to parse output.".into()),  
-            }  
-        }  
-        None => Err("Output did not contain the expected lines.".into()),  
-    }  
-}  
-  
-pub fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {  
-    run_wmic_command_cpu_sn("wmic bios get serialnumber")  
-}  
-  
-pub fn cpu_name() -> Result<String, Box<dyn std::error::Error>> {  
-    run_wmic_command_cpu_sn("wmic cpu get name")  
+fn run_wmic_command_cpu_sn(command: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let output = Command::new("cmd").arg("/c").arg(command).output()?;
+
+    let stdout = String::from_utf8(output.stdout)?;
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    // 假设我们只对第二行感兴趣，并提取其最后一个单词
+    match lines.get(1) {
+        Some(line) => {
+            // 直接将第二行转换为String
+            Ok(line.trim().to_string())
+        }
+        None => {
+            // 如果第二行不存在，返回一个错误
+            Err("Output did not contain the expected lines.".into())
+        }
+    }
 }
 
-pub fn get_gpu_info() -> Result<String, Box<dyn std::error::Error>> {  
-    let output = Command::new("cmd")  
+pub fn get_bios_serial_number() -> Result<String, Box<dyn std::error::Error>> {
+    run_wmic_command_cpu_sn("wmic bios get serialnumber")
+}
+
+pub fn cpu_name() -> Result<String, Box<dyn std::error::Error>> {
+    run_wmic_command_cpu_sn("wmic cpu get name")
+}
+
+pub fn get_gpu_info() -> Result<String, Box<dyn std::error::Error>> {
+    let output = Command::new("cmd")
         .arg("/c")
-        .arg("wmic path Win32_VideoController get name") 
-        .output()?;  
-  
-    let stdout = String::from_utf8_lossy(&output.stdout);  
-       
-    let lines = stdout.lines().skip(2);  
-      
-    let result = lines.fold(String::new(), |acc, line| acc + &format!("{}\n", line.trim()));  
-  
-    Ok(result)  
+        .arg("wmic path Win32_VideoController get name")
+        .output()?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let lines = stdout.lines().skip(2);
+
+    let result = lines.fold(String::new(), |acc, line| {
+        acc + &format!("{}\n", line.trim())
+    });
+
+    Ok(result)
 }
 
 pub fn get_disk_info() -> Result<String, Box<dyn std::error::Error>> {

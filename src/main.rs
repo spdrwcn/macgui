@@ -26,12 +26,39 @@ fn main() {
         )
         .get_matches();
     let ip_address = matches.value_of("ip").unwrap();
-    let serial_number = handle_error(sysinfo::get_bios_serial_number(), String::from("Unknown"), "fetching serial number");  
-    let cpu_name = handle_error(sysinfo::cpu_name(), String::from("Unknown"), "fetching cpu name");  
-    let ramgb = match sysinfo::ram_info() {Ok(total_gb) => format!("{}", total_gb),Err(e) => format!("Error getting RAM info: {}", e),};
-    let disk_info = handle_error(sysinfo::get_disk_info(), String::from("Unknown"), "getting disk info");  
-    let gpu_name = handle_error(sysinfo::get_gpu_info(), String::from("Unknown"), "getting gpu info");  
+    let serial_number = handle_error(
+        sysinfo::get_bios_serial_number(),
+        String::from("Unknown"),
+        "fetching serial number",
+    );
+    let cpu_name = handle_error(
+        sysinfo::cpu_name(),
+        String::from("Unknown"),
+        "fetching cpu name",
+    );
+    let ramgb = match sysinfo::ram_info() {
+        Ok(total_gb) => format!("{}", total_gb),
+        Err(e) => format!("Error getting RAM info: {}", e),
+    };
+    let disk_info = handle_error(
+        sysinfo::get_disk_info(),
+        String::from("Unknown"),
+        "getting disk info",
+    );
+    let gpu_name = handle_error(
+        sysinfo::get_gpu_info(),
+        String::from("Unknown"),
+        "getting gpu info",
+    );
     let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
+    println!("处理器: \n{}", cpu_name);
+    println!("内存: \n{} GB\n", ramgb);
+    println!("硬盘: \n{}", disk_info);
+    println!("显卡: \n{}", gpu_name);
+    println!("序列号: {}", serial_number);
+    println!("有线MAC地址: {}", wired_mac);
+    println!("无线MAC地址: {}", wireless_mac);
+    println!("蓝牙MAC地址: {}\n", bluetooth_mac);
 
     let redis_status = redis::write_mac_to_redis(
         &ip_address,
@@ -41,7 +68,10 @@ fn main() {
         &bluetooth_mac,
     );
 
-    let mac_qr: String = format!("{},{},{},{}",serial_number, wired_mac, wireless_mac, bluetooth_mac);
+    let mac_qr: String = format!(
+        "{},{},{},{}",
+        serial_number, wired_mac, wireless_mac, bluetooth_mac
+    );
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 550.0]),
         ..Default::default()
@@ -55,12 +85,10 @@ fn main() {
                 .width_range(350.0..=350.0)
                 .show_inside(ui, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.heading(format!("处理器: {}", cpu_name));
-                        ui.heading(format!("内存: {} GB\n", ramgb));
-                        ui.heading("硬盘:");
-                        ui.heading(format!("{}", disk_info));
-                        ui.heading("显卡:");
-                        ui.heading(format!("{}", gpu_name));
+                        ui.heading(format!("处理器: \n{}\n", cpu_name));
+                        ui.heading(format!("内存: \n{} GB\n", ramgb));
+                        ui.heading(format!("硬盘: \n{}", disk_info));
+                        ui.heading(format!("显卡: \n{}", gpu_name));
                         ui.heading(format!("序列号: {}", serial_number));
                         ui.heading(format!("有线MAC地址: {}", wired_mac));
                         ui.heading(format!("无线MAC地址: {}", wireless_mac));
@@ -119,12 +147,12 @@ fn setup_custom_fonts(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-fn handle_error<T, E: Display>(result: Result<T, E>, default: T, error_msg: &str) -> T {  
-    match result {  
-        Ok(value) => value,  
-        Err(err) => {  
-            eprintln!("Error {}: {}", error_msg, err);  
-            default  
-        }  
-    }  
-}  
+fn handle_error<T, E: Display>(result: Result<T, E>, default: T, error_msg: &str) -> T {
+    match result {
+        Ok(value) => value,
+        Err(err) => {
+            eprintln!("Error {}: {}", error_msg, err);
+            default
+        }
+    }
+}
