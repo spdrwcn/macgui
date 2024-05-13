@@ -13,7 +13,7 @@ mod sysinfo;
 
 fn main() {
     let matches = App::new("macgui")
-        .version("1.4.4")
+        .version("1.4.5")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
@@ -51,7 +51,7 @@ fn main() {
         "getting gpu info",
     );
     let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
-    println!("处理器: \n{}", cpu_name);
+    println!("处理器: \n{}\n", cpu_name);
     println!("内存: \n{} GB\n", ramgb);
     println!("硬盘: \n{}", disk_info);
     println!("显卡: \n{}", gpu_name);
