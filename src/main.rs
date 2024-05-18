@@ -73,14 +73,14 @@ fn main() {
         serial_number, wired_mac, wireless_mac, bluetooth_mac
     );
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 550.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
         ..Default::default()
     };
     let _ = eframe::run_simple_native("MAC地址采集客户端", options, move |ctx, _frame| {
         setup_custom_fonts(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::SidePanel::left("left_panel")
-                .resizable(true)
+                .resizable(false)
                 .default_width(200.0)
                 .width_range(350.0..=350.0)
                 .show_inside(ui, |ui| {
