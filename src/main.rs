@@ -1,11 +1,10 @@
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use clap::{App, Arg};
 use eframe::egui;
 use egui::ImageData;
 use image::{DynamicImage, Luma};
 use qrcode::QrCode;
-use std::fmt::Display;
 
 mod mac;
 mod redis;
@@ -26,39 +25,14 @@ fn main() {
         )
         .get_matches();
     let ip_address = matches.value_of("ip").unwrap();
-    let serial_number = handle_error(
-        sysinfo::get_bios_serial_number(),
-        String::from("Unknown"),
-        "fetching serial number",
-    );
-    let cpu_name = handle_error(
-        sysinfo::cpu_name(),
-        String::from("Unknown"),
-        "fetching cpu name",
-    );
-    let ramgb = match sysinfo::ram_info() {
-        Ok(total_gb) => format!("{}", total_gb),
-        Err(e) => format!("Error getting RAM info: {}", e),
-    };
-    let disk_info = handle_error(
-        sysinfo::get_disk_info(),
-        String::from("Unknown"),
-        "getting disk info",
-    );
-    let gpu_name = handle_error(
-        sysinfo::get_gpu_info(),
-        String::from("Unknown"),
-        "getting gpu info",
-    );
+    let serial_number = sysinfo::get_bios_serial_number().unwrap(); 
+    let cpu_name = sysinfo::cpu_name().expect("Failed to get CPU name");  
+    let ramgb = sysinfo::ram_info().expect("Failed to get RAM name");  
+    let disk_info = sysinfo::get_disk_info().expect("Failed to get DISK name");  
+    let gpu_name = sysinfo::get_gpu_info().expect("Failed to get GPU name");  
+    
+    
     let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
-    println!("处理器: \n{}\n", cpu_name);
-    println!("内存: \n{} GB\n", ramgb);
-    println!("硬盘: \n{}", disk_info);
-    println!("显卡: \n{}", gpu_name);
-    println!("序列号: {}", serial_number);
-    println!("有线MAC地址: {}", wired_mac);
-    println!("无线MAC地址: {}", wireless_mac);
-    println!("蓝牙MAC地址: {}\n", bluetooth_mac);
 
     let redis_status = redis::write_mac_to_redis(
         &ip_address,
@@ -67,7 +41,7 @@ fn main() {
         &wireless_mac,
         &bluetooth_mac,
     );
-
+    
     let mac_qr: String = format!(
         "{},{},{},{}",
         serial_number, wired_mac, wireless_mac, bluetooth_mac
@@ -147,12 +121,3 @@ fn setup_custom_fonts(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-fn handle_error<T, E: Display>(result: Result<T, E>, default: T, error_msg: &str) -> T {
-    match result {
-        Ok(value) => value,
-        Err(err) => {
-            eprintln!("Error {}: {}", error_msg, err);
-            default
-        }
-    }
-}
