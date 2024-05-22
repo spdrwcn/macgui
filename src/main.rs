@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+//#![windows_subsystem = "windows"]
 
 use clap::{App, Arg};
 use eframe::egui;
@@ -12,7 +12,7 @@ mod sysinfo;
 
 fn main() {
     let matches = App::new("macgui")
-        .version("1.4.5")
+        .version("1.4.6")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
