@@ -1,0 +1,12 @@
+conditions:  
+  - adapter_type: wired  
+    keywords:  
+      - ["gbe", "true"]  
+  - adapter_type: wireless  
+    keywords:  
+      - ["wi-fi", "true"]  
+      - ["wi-fi", "ax"]  
+      - ["wireless", "true"]  
+  - adapter_type: bluetooth  
+    keywords:  
+      - ["bluetooth", "true"]

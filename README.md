@@ -24,28 +24,20 @@ OPTIONS:
     -i, --ip <IP_ADDRESS>         Redis数据库地址 [default: redis://127.0.0.1:6379/0]
 ```
 
-## 默认参数 多组参数逗号分隔
+## conditions.yaml 配置文件，与`exe`文件同目录
 ```
-        (
-            "wired",
-            vec![
-                vec!["gbe", "true"]
-            ],
-        ),
-        (
-            "wireless",   // 多组条件示例，任意一组匹配即可
-            vec![
-                vec!["wi-fi", "true"],
-                vec!["wi-fi", "ax"],
-                vec!["wireless", "true"]
-            ],
-        ),
-        (
-            "bluetooth",
-            vec![
-                vec!["bluetooth", "true"]
-            ],
-        ),
+conditions:  
+  - adapter_type: wired  
+    keywords:  
+      - ["gbe", "true"]  
+  - adapter_type: wireless  
+    keywords:  
+      - ["wi-fi", "true"]  
+      - ["wi-fi", "ax"]  
+      - ["wireless", "true"]  
+  - adapter_type: bluetooth  
+    keywords:  
+      - ["bluetooth", "true"]
 ```
 
 ## 示例 
