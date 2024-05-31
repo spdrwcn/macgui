@@ -5,14 +5,14 @@ use eframe::egui;
 use egui::ImageData;
 use image::{DynamicImage, Luma};
 use qrcode::QrCode;
+use mac_conditions;
+use systemd_info;
 
-mod mac;
 mod redis;
-mod sysinfo;
 
 fn main() {
     let matches = App::new("macgui")
-        .version("1.4.6")
+        .version("1.5.0")
         .author("h13317136163@163.com")
         .about("MAC地址采集程序")
         .arg(
@@ -25,14 +25,14 @@ fn main() {
         )
         .get_matches();
     let ip_address = matches.value_of("ip").unwrap();
-    let serial_number = sysinfo::get_bios_serial_number().unwrap(); 
-    let cpu_name = sysinfo::cpu_name().expect("Failed to get CPU name");  
-    let ramgb = sysinfo::ram_info().expect("Failed to get RAM name");  
-    let disk_info = sysinfo::get_disk_info().expect("Failed to get DISK name");  
-    let gpu_name = sysinfo::get_gpu_info().expect("Failed to get GPU name");  
+    let serial_number = systemd_info::get_bios_serial_number().unwrap(); 
+    let cpu_name = systemd_info::cpu_name().expect("Failed to get CPU name");  
+    let ramgb = systemd_info::ram_info().expect("Failed to get RAM name");  
+    let disk_info = systemd_info::get_disk_info().expect("Failed to get DISK name");  
+    let gpu_name = systemd_info::get_gpu_info().expect("Failed to get GPU name");  
     
     
-    let (wired_mac, wireless_mac, bluetooth_mac) = mac::get_mac_addresses();
+    let (wired_mac, wireless_mac, bluetooth_mac) = mac_conditions::get_mac_addresses();
 
     let redis_status = redis::write_mac_to_redis(
         &ip_address,
